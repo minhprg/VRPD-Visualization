@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>VRP-D Visualization</title>
+		<script src="js/jquery331.js"></script>
+		<script src="js/core.js"></script>
+		<link rel="stylesheet" href="css/bootstrap.min.css" />
+		<link rel="stylesheet" href="css/sticky-footer-navbar.css" />
+		<link rel="stylesheet" href="css/custom.css" />
+	</head>
+	<body>
+
+		<header>
+			<!-- Fixed navbar -->
+			<nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+				<a class="navbar-brand" href="#">VRP-D Visualization</a>
+				<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+					<span class="navbar-toggler-icon"></span>
+				</button>
+				<div class="collapse navbar-collapse" id="navbarCollapse">
+					<ul class="navbar-nav mr-auto">
+						<li class="nav-item active">
+							<a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
+						</li>
+						<li class="nav-item">
+							<a class="nav-link" href="#">About</a>
+						</li>
+					</ul>
+					<!--<form class="form-inline mt-2 mt-md-0">-->
+						<!--<input class="form-control mr-sm-2" type="text" placeholder="Search" aria-label="Search">-->
+						<!--<button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>-->
+					<!--</form>-->
+				</div>
+			</nav>
+		</header>
+
+		<!-- Begin page content -->
+		<main role="main" class="container">
+			<div class="row my-2">
+				<div class="col-sm-4">
+					Instance file: <input type="file" id="instanceFile"/>
+				</div>
+				<div class="col-sm-4">
+					Result file: <input type="file" id="resultFile"/>
+				</div>
+				<div class="col-sm-4">
+					<button id="btnAction">Visualize</button>
+					<button id="btnCapture">Take screenshot</button>
+					<a href="#" style="display: none;" id="downloadLink" download></a>
+				</div>
+			</div>
+
+			<div class="row">
+				<div class="col-sm-12">
+					<canvas id="dot" width="1280" height="700" style="border:1px solid;"></canvas>
+				</div>
+			</div>
+
+			<div class="row">
+				<div class="col-sm-12">
+					<label>Truck delivery tour: </label>
+					<div id="truckDeliveries"></div>
+					<div id="droneDeliveries" style="display: none;"></div>
+					<div id="coords" style="display: none;"></div>
+				</div>
+			</div>
+		</main>
+
+
+		<script>
+			$(document).ready(function() {
+			    document.getElementById("btnAction").onclick = function() {
+			        // Get coords, truck deliveries, drone deliveries
+					var coords = getCoordsFromText("coords");
+					var truckDeliveries = getTruckTour("truckDeliveries");
+					var droneDeliveries = getDroneDeliveries("droneDeliveries");
+					visualize(coords, truckDeliveries, droneDeliveries);
+				};
+
+				document.getElementById("btnCapture").onclick = function() {
+                    var canvas = document.getElementById('dot');
+                    var context = canvas.getContext('2d');
+                    canvas.toDataURL('png');
+                    var dataURL = canvas.toDataURL();
+                    var link = document.getElementById("downloadLink");
+                    link.href = dataURL;
+                    link.click();
+				};
+
+                document.getElementById('resultFile').onchange = function(){
+                    var truckDeliveries = [];
+                    var droneDeliveries = [];
+
+                    var file = this.files[0];
+
+                    var reader = new FileReader();
+                    reader.onload = function(progressEvent){
+                        // Entire file
+                        // console.log(this.result);
+
+                        // By lines
+                        lines = this.result.split('\n');
+                        for(var line = 0; line < lines.length; line++) {
+                            // console.log("Line " + line + ": " + lines[line]);
+                            if (line == 6) {
+                                // Truck deliveries
+                                truckDeliveries = lines[line].split(' ');
+                                // console.log(truckDeliveries);
+                            }
+                            else if (line > 6 && lines[line] != "ITERATIONS") {
+                                var tuple = lines[line].trim().split(' ');
+                                if (tuple.length > 1) {
+                                    droneDeliveries.push(tuple);
+                                }
+                            }
+                        }
+                        $("#truckDeliveries").text(truckDeliveries.toString());
+                        $("#droneDeliveries").text(droneDeliveries.toString());
+                    };
+                    reader.readAsText(file);
+                };
+
+                document.getElementById('instanceFile').onchange = function(){
+                    var coords = [];
+                    var file = this.files[0];
+
+                    var reader = new FileReader();
+                    reader.onload = function(progressEvent){
+                        // Entire file
+                        // console.log(this.result);
+
+                        // By lines
+                        lines = this.result.split('\n');
+                        for(var line = 0; line < lines.length; line++) {
+                            if (line >= 18 && lines[line].trim() != "EOF" && lines[line].trim().length > 0) {
+                                var parts = lines[line].split(' ');
+                                coords.push([parts[0], parts[1], parts[2]]);
+                            }
+                        }
+                        $("#coords").text(coords.toString());
+                    };
+                    reader.readAsText(file);
+                };
+			});
+		</script>
+	</body>
+</html>
